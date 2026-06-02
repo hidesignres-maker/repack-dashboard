@@ -3,1411 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Repack Planning Dashboard</title>
-    <!-- Tailwind CSS para los estilos rápidos -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons (los mismos que usaba tu código original) -->
+    <title>National Assortment - PepsiCo Catalog</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Cargar Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@400;500;700&display=swap');
-        
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #ffffff;
-            margin: 0;
-            padding: 0;
-        }
-
-        /* Dashboard Container */
-        .dashboard-container { 
-            background: white; 
-            width: 100%;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .header-blue { background-color: #005ce6; color: white; }
-        
-        /* Tablas */
-        .table-container { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th { text-transform: uppercase; font-size: 0.65rem; color: #6b7280; font-weight: 600; text-align: left; padding: 12px; border-bottom: 2px solid #e5e7eb; white-space: nowrap; position: sticky; top: 0; background: #f9fafb; z-index: 10; }
-        td { padding: 12px; border-bottom: 1px solid #e5e7eb; font-size: 0.8rem; color: #374151; vertical-align: middle; }
-        
-        /* Badges de Status */
-        .status-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; font-weight: 500; display: inline-block; text-align: center; }
-        .status-Fulfillable { border: 1px solid #22c55e; color: #16a34a; background: #f0fdf4; }
-        .status-Partial { border: 1px solid #f59e0b; color: #d97706; background: #fffbeb; }
-        .status-Unfulfillable { color: #6b7280; background: #f3f4f6; border: 1px solid #d1d5db; }
-        
-        /* Botones */
-        .btn-primary { background-color: #0597F2; color: #FFFFFF; border-radius: 4px; padding: 8px 16px; font-size: 0.875rem; font-weight: 600; cursor: pointer; border: none; transition: background 0.2s; }
-        .btn-primary:hover:not(:disabled) { background-color: #0483D1; }
-        .btn-primary:disabled { background-color: #AFD7EF; color: #FFFFFF; cursor: not-allowed; }
-        .btn-secondary { border: 1px solid #d1d5db; color: #374151; border-radius: 4px; padding: 8px 16px; font-size: 0.875rem; font-weight: 500; cursor: pointer; background: white; }
-        .btn-secondary:hover { background: #f3f4f6; }
-
-        /* Modal lateral derecho (Figma Style) */
-        .modal-overlay {
-            position: fixed;
-            top: 0; right: 0; bottom: 0; left: 0;
-            background: rgba(0,0,0,0.4);
-            display: none;
-            justify-content: flex-end; /* Alinea a la derecha */
-            z-index: 50;
-        }
-        .modal-overlay.active { display: flex; }
-
-        .modal-panel {
-            width: 600px; /* Un poco más ancho como en tu Figma */
-            background: white;
-            height: 100%;
-            box-shadow: -10px 0 30px rgba(0,0,0,0.15); /* Sombra más fuerte */
-            display: flex;
-            flex-direction: column;
-            animation: slideIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; /* Animación más suave */
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
-        }
-
-        /* Inputs y Validaciones */
-        .input-qty { border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; width: 70px; text-align: right; font-size: 0.8rem; }
-        .input-qty:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
-        .input-qty.error { border-color: #ef4444; background-color: #fef2f2; }
-        .input-qty.warning { border-color: #f59e0b; background-color: #fffbeb; }
-        
-        .msg-text { font-size: 0.65rem; display: block; margin-top: 4px; }
-        .msg-text.error { color: #ef4444; }
-        .msg-text.warning { color: #d97706; }
-
-        /* Custom Checkbox */
-        input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-color: #1e88e5; }
-        input[type="checkbox"]:disabled { cursor: not-allowed; }
-
-        /* Floating Toast */
-        .toast-floating {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 9999;
-            box-shadow: 0 4px 20px rgba(34, 197, 94, 0.25); /* Ligero shadow color verde */
-            animation: slideUp 0.3s ease-out forwards;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        /* Sorting Icons */
-        th[data-sort] { cursor: pointer; user-select: none; }
-        th[data-sort]:hover { background-color: #f3f4f6; }
-        .sort-icon { display: inline-block; margin-left: 4px; opacity: 0.4; }
-        .sort-icon.active { opacity: 1; color: #0597F2; }
-
-        /* Custom Select / Dropdown */
-        .custom-select {
-            appearance: none;
-            -webkit-appearance: none;
-            background-color: white;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E');
-            background-repeat: no-repeat;
-            background-position: calc(100% - 12px) center; /* 12px spacing from the right */
-            background-size: 16px;
-            padding: 8px 40px 8px 12px !important; /* Padding right compensates for icon */
-        }
-
-        /* KPI Specific Styles */
-        .kpi-card {
-            width: 190px;
-            height: 85px;
-            flex-shrink: 0;
-            padding: 12px 16px;
-            background-color: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 4px;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .kpi-card.alert {
-            background-color: #FFF5F5;
-            border-color: #fecaca;
-        }
-        .kpi-value { 
-            font-family: 'Roboto Condensed', sans-serif; 
-            font-size: 35px; 
-            font-weight: 500; 
-            color: #111827; 
-            line-height: 1; 
-            letter-spacing: -0.02em; 
-        }
-        .kpi-chip { 
-            font-size: 11px; 
-            padding: 2px 6px; 
-            border-radius: 4px; 
-            display: inline-flex; 
-            align-items: center; 
-            font-weight: 600; 
-            font-family: 'Inter', sans-serif; 
-            height: fit-content; 
-        }
-        .kpi-chip.up { background: #EBFBEE; color: #2B8A3E; }
-        .kpi-chip.down { background: #FFF5F5; color: #C92A2A; }
-    </style>
 </head>
 <body>
+    <nav class="top-nav">
+        <div class="menu-icon"><i data-lucide="menu"></i></div>
+    </nav>
 
-    <div class="dashboard-container">
-        <!-- HEADER AZUL -->
-        <header class="header-blue px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <i data-lucide="menu" class="w-5 h-5 cursor-pointer opacity-80 hover:opacity-100"></i>
-                <div class="flex items-center gap-2 font-bold text-xl tracking-tight">
-                    <i data-lucide="anchor" class="w-6 h-6"></i> schip.
-                </div>
-            </div>
-            <div class="flex items-center gap-4 text-sm">
-                <i data-lucide="bell" class="w-5 h-5 opacity-80 hover:opacity-100 cursor-pointer"></i>
-                <div class="flex items-center gap-2">
-                    <div class="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center font-bold text-xs">SC</div>
-                    Shirley Chisholm
-                </div>
+    <main class="container">
+        <header class="page-header">
+            <h1>National Assortment</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary">Add New Product</button>
+                <button class="btn btn-secondary">Export</button>
             </div>
         </header>
 
-        <!-- CONTENIDO DASHBOARD -->
-        <div class="p-6 flex flex-col flex-1">
-            
-            <!-- Notificación de Éxito (Oculta por defecto) -->
-            <div id="successAlert" class="hidden toast-floating bg-[#F0FDF4] border border-[#BDECC8] rounded flex items-center justify-between text-[#16A34A] text-sm px-4 py-3 gap-3 min-w-[320px]">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="check-circle" class="w-5 h-5 text-[#16A34A]"></i>
-                    <span id="successMsg" class="font-medium tracking-tight"></span>
-                </div>
-                <button onclick="document.getElementById('successAlert').classList.add('hidden')" class="opacity-50 hover:opacity-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <section class="kpis">
+            <div class="kpi-card">
+                <div class="kpi-title">TOTAL ITEMS</div>
+                <div class="kpi-value" id="kpi-total">--</div>
             </div>
-
-            <!-- Título y Controles Top -->
-            <div class="flex justify-between items-end mb-6">
-                <div>
-                    <h1 class="text-xl font-bold text-gray-900 mb-1">Repack planning dashboard</h1>
-                    <a href="#" class="text-xs text-blue-600 hover:underline">All sources up to date</a>
-                </div>
-                <div class="flex gap-3">
-                    <select class="custom-select border border-gray-300 rounded text-sm bg-white focus:outline-[#0597F2] h-[36px]"><option>Frito Lay NA</option></select>
-                    <button class="border border-gray-300 rounded text-sm bg-gray-50 text-gray-500 cursor-not-allowed flex items-center gap-2 h-[36px] px-3">
-                        <i data-lucide="calendar" class="w-4 h-4"></i> P6W1
-                    </button>
-                    <button class="border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 bg-white h-[36px] px-4">Export</button>
-                </div>
+            <div class="kpi-card">
+                <div class="kpi-title">ACTIVE / HUB ACTIVE</div>
+                <div class="kpi-value" id="kpi-active">--</div>
             </div>
-
-            <!-- Tarjetas de Métricas (KPIs) -->
-            <div class="flex justify-center gap-[8px] mb-[8px]">
-                <div class="kpi-card">
-                    <div class="text-[0.65rem] font-bold text-gray-500 uppercase mb-1">Total Forecasted Demand</div>
-                    <div class="flex items-center gap-2">
-                        <div class="kpi-value">222,339</div>
-                        <span class="kpi-chip up"><i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> 1.2%</span>
-                    </div>
-                </div>
-                <div class="kpi-card">
-                    <div class="text-[0.65rem] font-bold text-gray-500 uppercase mb-1">Required Production</div>
-                    <div class="flex items-center gap-2">
-                        <div class="kpi-value">91,079</div>
-                        <span class="kpi-chip up"><i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> 0.8%</span>
-                    </div>
-                </div>
-                <div class="kpi-card">
-                    <div class="text-[0.65rem] font-bold text-gray-500 uppercase mb-1">Cuts</div>
-                    <div class="flex items-center gap-2">
-                        <div class="kpi-value">5,149</div>
-                        <span class="kpi-chip down"><i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> 530</span>
-                    </div>
-                </div>
-                <div class="kpi-card">
-                    <div class="text-[0.65rem] font-bold text-gray-500 uppercase mb-1">Total Projected Prod.</div>
-                    <div class="flex items-center gap-2">
-                        <div class="kpi-value">85,920</div>
-                        <span class="kpi-chip up"><i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> 4.5%</span>
-                    </div>
-                </div>
-                <div class="kpi-card">
-                    <div class="text-[0.65rem] font-bold text-gray-500 uppercase mb-1">Produced/Forecast</div>
-                    <div class="flex items-center gap-2">
-                        <div class="kpi-value">97.68%</div>
-                        <span class="kpi-chip up"><i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> 2.3%</span>
-                    </div>
-                </div>
+            <div class="kpi-card">
+                <div class="kpi-title">PIPELINE (2026)</div>
+                <div class="kpi-value" id="kpi-pipeline">--</div>
             </div>
-
-            <!-- Tarjetas de Warehouses Bottom 3 -->
-            <div class="flex justify-center gap-[8px] mb-8">
-                <div class="kpi-card">
-                    <div class="text-[0.65rem] font-bold text-gray-500 uppercase mb-1">Memphis Fulfill qty</div>
-                    <div class="flex items-center gap-2">
-                        <div class="kpi-value">45,200</div>
-                        <span class="kpi-chip up"><i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> 3.1%</span>
-                    </div>
-                </div>
-                <div class="kpi-card">
-                    <div class="text-[0.65rem] font-bold text-gray-500 uppercase mb-1">Grand Prairie Fulfill qty</div>
-                    <div class="flex items-center gap-2">
-                        <div class="kpi-value">28,500</div>
-                        <span class="kpi-chip down"><i data-lucide="trending-down" class="w-3 h-3 mr-1"></i> 1.4%</span>
-                    </div>
-                </div>
-                <div class="kpi-card">
-                    <div class="text-[0.65rem] font-bold text-gray-500 uppercase mb-1">Hamburg Fulfill qty</div>
-                    <div class="flex items-center gap-2">
-                        <div class="kpi-value">22,220</div>
-                        <span class="kpi-chip up"><i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> 2.0%</span>
-                    </div>
-                </div>
+            <div class="kpi-card">
+                <div class="kpi-title">LTO ITEMS</div>
+                <div class="kpi-value" id="kpi-lto">--</div>
             </div>
+        </section>
 
-            <!-- Navegación central (Tabs) -->
-            <div class="flex justify-center mb-8">
-                <div class="bg-[#EFEFEF] rounded-[10000px] p-0.5 flex items-center h-[32px] w-fit">
-                    <button class="text-gray-700 font-medium text-xs hover:bg-gray-200 transition h-full px-4 rounded-full flex items-center">Executive Summary</button>
-                    <button id="tabFulfill" class="text-gray-700 font-medium text-xs hover:bg-gray-200 transition h-full px-6 rounded-full flex flex-col items-center justify-center leading-none gap-0.5"><span>Fulfill</span><span class="text-[8px] font-normal text-gray-500">This Week</span></button>
-                    <button id="tabCuts" class="bg-[#0597F2] text-white font-medium text-xs h-full px-6 rounded-full flex flex-col items-center justify-center leading-none gap-0.5 shadow-sm"><span>Cuts</span><span class="text-[8px] font-normal text-blue-100">This Week</span></button>
-                </div>
+        <section class="sub-nav" style="justify-content: center; margin-bottom: 32px;">
+            <div class="segmented-control">
+                <button class="segmented-btn active" data-view="total">Total Items</button>
+                <button class="segmented-btn" data-view="disco"><i data-lucide="ban" style="width: 16px; height: 16px;"></i> Discontinuations</button>
+                <button class="segmented-btn" data-view="upc"><i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i> UPC changes</button>
             </div>
+        </section>
 
-            <!-- CONTENEDOR DE VISTAS -->
-            <div id="cutsView" class="flex-1 flex flex-col">
-                <div id="cutsTitle" class="mb-4 text-lg font-bold text-gray-900">Cuts</div>
+        <section class="controls-area">
+            <div class="filters-left">
+                <span class="items-count">30 ASINs</span>
+                <div class="search-box">
+                    <i data-lucide="search" style="width: 16px; height: 16px; color: var(--muted-text);"></i>
+                    <input type="text" placeholder="Search">
+                </div>
                 
-                <!-- Controles de la Tabla (Buscador, Filtros, Botón Modal) -->
-                <div class="flex justify-between items-center mb-2 px-2">
-                    <div class="relative w-72">
-                        <i data-lucide="search" class="absolute left-3 top-2.5 text-gray-400 w-4 h-4"></i>
-                        <input type="text" id="searchInput" placeholder="Search by Item ID or ASIN..." class="w-full pl-9 pr-3 h-[36px] border border-gray-300 rounded text-sm focus:outline-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <select id="filterSelect" class="custom-select border border-gray-300 rounded text-sm bg-white focus:outline-[#0597F2] h-[36px]" style="min-width: 140px;">
-                            <option value="All">Filter by: All (10)</option>
-                            <option value="Fulfillable">Fulfillable (7)</option>
-                            <option value="Partial">Partial (1)</option>
-                            <option value="Unfulfillable">Unfulfillable (2)</option>
-                        </select>
-                        <button id="btnFulfillMain" class="btn-primary h-[36px] px-4 flex items-center justify-center" disabled>Fulfill items</button>
+                <!-- BU Filter (Custom Dropdown) -->
+                <div class="filter-dropdown single-select" data-filter="buFilter">
+                    <button class="dropdown-trigger"><span style="font-weight:500;">ALL</span> <i data-lucide="chevron-down" style="width:14px;height:14px;"></i></button>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-item active"><span>ALL</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>FLNA</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>PBNA</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>QUAKER</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>Other</span><i data-lucide="check" class="check-icon"></i></div>
                     </div>
                 </div>
 
-                <!-- Tabla Principal -->
-                <div class="border border-gray-200 rounded bg-white flex-1 flex flex-col">
-                    <div class="table-container">
-                        <table id="mainTable">
-                            <thead>
-                                <tr>
-                                    <th class="w-8 text-center"><input type="checkbox" id="selectAll" disabled></th>
-                                    <th class="w-[160px]" data-sort="id">Item ID <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="status">Status <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="title">Product Title <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="type">Type <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="asin">ASIN <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="shortfall" class="text-right">Item Cut Qty <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="recommendedQty" class="text-right">Recommended Qty <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="baseSavings" class="text-right text-gray-900 font-bold">Savings ($) <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="recoveryPeriod">Recovery Period <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="lastUpdated">Last Updated <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                </tr>
-                            </thead>
-                            <tbody id="mainTbody">
-                                <!-- Renderizado por JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <div id="emptyState" class="hidden p-8 text-center text-gray-500 text-sm">
-                        No items match your search or filter.
-                    </div>
-                    
-                    <!-- Pagination -->
-                    <div class="mt-auto px-4 py-3 flex items-center justify-end gap-6 text-xs text-gray-600 bg-white">
-                        <div class="flex items-center gap-2">
-                            <span>Rows per page:</span>
-                            <select id="pageSizeCuts" class="bg-transparent border-none font-medium focus:outline-none cursor-pointer">
-                                <option value="10">10</option>
-                                <option value="20">20</option>
-                                <option value="50">50</option>
-                            </select>
-                        </div>
-                        <div id="pageInfoCuts">1-10 of 10</div>
-                        <div class="flex items-center gap-4">
-                            <button id="btnPrevCuts" class="text-gray-400 hover:text-gray-700 disabled:opacity-30 cursor-pointer" disabled>
-                                <i data-lucide="chevron-left" class="w-5 h-5"></i>
-                            </button>
-                            <button id="btnNextCuts" class="text-gray-400 hover:text-gray-700 disabled:opacity-30 cursor-pointer" disabled>
-                                <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="fulfillView" class="hidden flex-1 flex flex-col">
-                <div id="fulfillTitle" class="mb-4 text-lg font-bold text-gray-900">Production Items</div>
-                
-                <!-- Controles de la Tabla Fulfill -->
-                <div class="flex justify-between items-center mb-2 px-2">
-                    <div class="relative w-72">
-                        <i data-lucide="search" class="absolute left-3 top-2.5 text-gray-400 w-4 h-4"></i>
-                        <input type="text" id="searchFulfillInput" placeholder="Search by Item ID or ASIN..." class="w-full pl-9 pr-3 h-[36px] border border-gray-300 rounded text-sm focus:outline-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <button class="btn-secondary flex items-center gap-2 h-[36px] px-3 text-xs font-medium"><i data-lucide="plus" class="w-4 h-4"></i> Add Filter</button>
-                        <button id="btnCutsMain" class="btn-primary h-[36px] px-4 flex items-center justify-center text-xs" disabled>Cuts</button>
-                    </div>
-                </div>
-
-                <!-- Tabla Fulfill -->
-                <div class="border border-gray-200 rounded bg-white flex-1 flex flex-col">
-                    <div class="table-container">
-                        <table id="fulfillTable">
-                            <thead>
-                                <tr>
-                                    <th class="w-8 text-center"><input type="checkbox" disabled></th>
-                                    <th class="w-[160px]" data-sort="id">ITEM ID <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="title">PRODUCT TITLE <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="type">TYPE <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="asin">ASIN <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="reqProd" class="text-left">REQ<br>PRODUCTION <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="memphis" class="text-left">MEMPHIS<br>FULFILL QTY <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="gp" class="text-left">GP FULFILL<br>QTY <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="hamburg" class="text-left">HAMBURG<br>FULFILL QTY <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="shortfall" class="text-left">SHORTFALL <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                    <th data-sort="lastUpdated">LAST UPDATED <i data-lucide="chevrons-up-down" class="w-3 h-3 sort-icon"></i></th>
-                                </tr>
-                            </thead>
-                            <tbody id="fulfillTbody">
-                                <!-- Renderizado por JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <!-- Pagination Fulfill -->
-                    <div class="mt-auto px-4 py-3 flex items-center justify-end gap-6 text-xs text-gray-600 bg-white">
-                        <div class="flex items-center gap-2">
-                            <span>Rows per page:</span>
-                            <select id="pageSizeFulfill" class="bg-transparent border-none font-medium focus:outline-none cursor-pointer">
-                                <option value="10">10</option>
-                                <option value="20">20</option>
-                                <option value="50">50</option>
-                            </select>
-                        </div>
-                        <div id="pageInfoFulfill">1-5 of 27</div>
-                        <div class="flex items-center gap-4">
-                            <button id="btnPrevFulfill" class="text-gray-400 hover:text-gray-700 disabled:opacity-30 cursor-pointer" disabled>
-                                <i data-lucide="chevron-left" class="w-5 h-5"></i>
-                            </button>
-                            <button id="btnNextFulfill" class="text-gray-400 hover:text-gray-700 disabled:opacity-30 cursor-pointer" disabled>
-                                <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- OVERLAY MODAL (Panel Lateral) -->
-        <div id="modalOverlay" class="modal-overlay">
-            <div class="modal-panel">
-                
-                <!-- Header Modal -->
-                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                    <h2 class="text-sm font-bold text-gray-900 tracking-wide uppercase">UNCUT ITEMS / CONFIRM ALLOCATION</h2>
-                    <button id="closeModal" class="text-gray-400 hover:text-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
-                </div>
-                
-                <!-- Body Modal -->
-                <div class="p-6 flex-1 overflow-y-auto">
-                    <p class="text-sm text-gray-800 font-medium mb-1">Review and adjust quantities before uncutting.</p>
-                    <p class="text-[0.8rem] text-gray-500 mb-6">System recommends uncutting these items based on component availability. Select which ones to proceed with.</p>
-                    
-                    <div class="border border-gray-200 rounded overflow-hidden">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="w-6 px-3 py-2"><input type="checkbox" id="modalSelectAll" checked></th>
-                                    <th class="px-3 py-2">Status</th>
-                                    <th class="px-3 py-2">Product</th>
-                                    <th class="px-3 py-2 text-right">Available</th>
-                                    <th class="px-3 py-2 text-right">Allocated Qty</th>
-                                    <th class="px-3 py-2 text-right">Savings ($)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="modalTbody" class="bg-white">
-                                <!-- Renderizado por JS -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Resumen Totales -->
-                    <div class="bg-gray-50 border border-gray-200 rounded p-4 mt-6 text-right font-bold text-sm text-gray-800" id="modalTotals">
-                        TOTAL ITEMS: 0 &nbsp;|&nbsp; TOTAL SAVINGS: $0
-                    </div>
-
-                    <!-- Warning Deuda -->
-                    <div id="debtWarning" class="hidden mt-3 p-3 bg-[#FFF8E6] border border-[#F59E0B] rounded text-amber-800 text-xs font-medium flex items-start gap-2">
-                        <i data-lucide="alert-triangle" class="w-4 h-4 flex-shrink-0 text-[#F59E0B]"></i>
-                        Warning: One or more allocated quantities exceed component availability
-                    </div>
-
-                    <!-- Razón -->
-                    <div class="mt-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-1"><span class="text-red-500">*</span> Reason</label>
-                        <select id="reasonSelect" class="custom-select w-full border border-gray-300 rounded text-sm bg-white focus:outline-blue-500" style="padding-top: 10px; padding-bottom: 10px;">
-                            <option value="">Select a reason...</option>
-                            <option value="BOM/Inventory Discrepancy">BOM/Inventory Discrepancy</option>
-                            <option value="Due-in Opportunity">Due-in Opportunity</option>
-                            <option value="Non-produced">Non-produced</option>
-                        </select>
-                    </div>
-
-                    <!-- Comentario -->
-                    <div class="mt-4">
-                        <label class="block text-xs font-bold text-gray-700 mb-2 uppercase">Add a comment (optional)</label>
-                        <input type="text" id="commentInput" placeholder="Type your comment here..." class="w-full border border-gray-300 rounded px-3 py-2.5 text-sm bg-white focus:outline-blue-500 placeholder-gray-400">
-                    </div>
-                </div>
-
-                <!-- Footer Modal -->
-                <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
-                    <button id="btnCancel" class="btn-secondary">Cancel</button>
-                    <button id="btnApply" class="btn-primary flex items-center gap-2">Uncut Items</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- OVERLAY MODAL CUTS (Centered) -->
-        <div id="modalCutsOverlay" class="fixed inset-0 bg-black bg-opacity-40 hidden z-[60] flex items-center justify-center">
-            <div class="bg-white rounded-lg shadow-xl w-[600px] flex flex-col max-h-[90vh]">
-                <!-- Header -->
-                <div class="px-6 py-4 flex justify-between items-center border-b border-gray-200">
-                    <h2 class="text-lg font-bold text-gray-900">Cutting Confirmation</h2>
-                    <button id="closeModalCutsBtn" class="text-gray-400 hover:text-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
-                </div>
-                <!-- Body -->
-                <div class="p-6 overflow-y-auto flex-1">
-                    <p class="text-sm text-gray-600 mb-6">Do you want to move this qty. to cut list?</p>
-                    
-                    <div class="mb-5">
-                        <label class="block text-sm font-medium text-gray-700 mb-1"><span class="text-red-500">*</span> Select a plant</label>
-                        <select id="modalCutsPlant" class="custom-select w-full border border-gray-300 rounded text-sm bg-white focus:outline-[#0597F2]" style="padding-top: 10px; padding-bottom: 10px;">
-                            <option value="">Select a plant...</option>
-                            <option value="Memphis">Memphis</option>
-                            <option value="Grand Prairie">Grand Prairie</option>
-                            <option value="Hamburg">Hamburg</option>
-                        </select>
-                    </div>
-
-                    <div class="border border-gray-200 rounded mb-5 bg-white">
-                        <table class="w-full text-sm">
-                            <thead class="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th class="text-left font-bold text-xs text-gray-600 uppercase px-4 py-3 border-none bg-gray-50">ITEM ID</th>
-                                    <th class="text-left font-bold text-xs text-gray-600 uppercase px-4 py-3 border-none bg-gray-50">PRODUCT TITLE</th>
-                                    <th class="text-left font-bold text-xs text-gray-600 uppercase px-4 py-3 border-none bg-gray-50 w-32">QTY</th>
-                                </tr>
-                            </thead>
-                            <tbody id="modalCutsTbody" class="divide-y divide-gray-200">
-                                <!-- Renderizado via JS -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="mb-5">
-                        <label class="block text-sm font-medium text-gray-700 mb-1"><span class="text-red-500">*</span> Reason</label>
-                        <select id="modalCutsReason" class="custom-select w-full border border-gray-300 rounded text-sm bg-white focus:outline-[#0597F2]" style="padding-top: 10px; padding-bottom: 10px;">
-                            <option value="">Select a reason...</option>
-                            <option value="Components Unavailable">Components Unavailable</option>
-                            <option value="Down-confirm per Sales">Down-confirm per Sales</option>
-                            <option value="Excess Customer WOS">Excess Customer WOS</option>
-                            <option value="Invalid Product">Invalid Product</option>
-                            <option value="Repack Delays">Repack Delays</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Add a comment (optional)</label>
-                        <textarea id="modalCutsComment" rows="3" class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-[#0597F2] placeholder-gray-400 resize-none"></textarea>
-                    </div>
-                </div>
-                <!-- Footer -->
-                <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 bg-white rounded-b-lg">
-                    <button id="btnCancelCuts" class="btn-secondary font-medium">Cancel</button>
-                    <button id="btnApplyCuts" class="btn-primary bg-gray-200 text-gray-500 hover:bg-gray-200 cursor-not-allowed" disabled>Cut</button>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Global Tooltip Element -->
-    <div id="globalTooltip" class="fixed z-[9999] bg-[#2D2D2D] text-[#FFFFFF] text-left rounded-[4px] px-3 py-2 w-max max-w-[250px] shadow-lg opacity-0 pointer-events-none transition-opacity duration-200" style="left: -999px; top: -999px;">
-        <div id="ttDefaultContent">
-            <div class="text-gray-300 mb-1 text-[11px]">Reason: <span class="text-white font-bold text-[11px] ml-1" id="ttReason"></span></div>
-            <div class="text-gray-300 mb-2 text-[11px]">Comment: <span class="text-white font-bold text-[11px] ml-1" id="ttComment"></span></div>
-            <div class="text-gray-400 text-[10px] flex gap-3 justify-between font-normal mt-1 border-t border-gray-600 pt-2">
-                <span id="ttAuthor"></span>
-                <span id="ttDate"></span>
-            </div>
-        </div>
-        <div id="ttBoxContent" class="hidden">
-            <div class="text-[11px]">Excess moved to fulfillment: <span class="text-white font-bold text-[11px]" id="ttExcessQty"></span></div>
-        </div>
-        <div class="absolute top-full left-1/2 -ml-1.5 border-[6px] border-transparent border-t-[#2D2D2D]"></div>
-    </div>
-
-    <!-- LOGICA DE NEGOCIO (Fusionada de React) -->
-    <script>
-        // Inicializar iconos
-        lucide.createIcons();
-
-        // 1. DATA EXACTA DE TU CÓDIGO
-        let ALL_ITEMS = [
-            { id: "28400737401", status: "Fulfillable", title: "Fritos Bean Dip Straight Pack, 9oz Cans", shortfall: 600, available: 600, componentAvailable: 600, baseSavings: 324553, recommendedQty: 600, type: "Produced", asin: "B09J1Q5PD2", recoveryPeriod: "P6W2", lastUpdated: "30 min" },
-            { id: "28400737425", status: "Fulfillable", title: "Nut Harvest Nut & Chocolate Mix", shortfall: 508, available: 508, componentAvailable: 508, baseSavings: 120432, recommendedQty: 508, type: "Produced", asin: "B09J1PF97P", recoveryPeriod: "P6W3", lastUpdated: "1 hour" },
-            { id: "28400737456", status: "Fulfillable", title: "Nut Harvest Trail Mix Variety Pack", shortfall: 495, available: 495, componentAvailable: 495, baseSavings: 297860, recommendedQty: 495, type: "Produced", asin: "B09J1Q733S", recoveryPeriod: "P7W1", lastUpdated: "1 hour" },
-            { id: "12000000171", status: "Fulfillable", title: "Frito-Lay Popped and Crisps Mix", shortfall: 384, available: 384, componentAvailable: 384, baseSavings: 107061, recommendedQty: 384, type: "Produced", asin: "B003QB16L2", recoveryPeriod: "P7W2", lastUpdated: "2 hours" },
-            { id: "28400517799", status: "Partial", title: "Cheetos Flamin' Hot Minis Take-Home", shortfall: 336, available: 336, componentAvailable: 200, baseSavings: 59179, recommendedQty: 300, type: "Produced", asin: "B08M321392", recoveryPeriod: "P7W3", lastUpdated: "2 hours" },
-            { id: "12000809941", status: "Fulfillable", title: "Cheetos Cheddar Minis Take-Home Canister", shortfall: 336, available: 336, componentAvailable: 336, baseSavings: 24553, recommendedQty: 336, type: "Non-Produced", asin: "B000R9AK50", recoveryPeriod: "P8W1", lastUpdated: "2 hours" },
-            { id: "28400517737", status: "Fulfillable", title: "Smartfood Popcorn White Cheddar, 2oz", shortfall: 288, available: 288, componentAvailable: 288, baseSavings: 3604, recommendedQty: 288, type: "Non-Produced", asin: "B08M2W3HSJ", recoveryPeriod: "P8W1", lastUpdated: "2 hours" },
-            { id: "28400737593", status: "Unfulfillable", title: "Fritos Bean Dip Straight Pack, 9oz Cans", shortfall: 600, available: 0, componentAvailable: 0, baseSavings: 324553, recommendedQty: 0, type: "Produced", asin: "B09J1QCQ7W", recoveryPeriod: "P6W2", lastUpdated: "30 min" },
-            { id: "12000171864", status: "Unfulfillable", title: "Nut Harvest Nut & Chocolate Mix", shortfall: 508, available: 0, componentAvailable: 0, baseSavings: 120432, recommendedQty: 0, type: "Produced", asin: "B079D72S2B", recoveryPeriod: "P6W3", lastUpdated: "1 hour" },
-            { id: "889392000931", status: "Unfulfillable", title: "Nut Harvest Trail Mix Variety Pack", shortfall: 495, available: 0, componentAvailable: 0, baseSavings: 297860, recommendedQty: 0, type: "Produced", asin: "B0BX6N382C", recoveryPeriod: "P7W1", lastUpdated: "1 hour" },
-            { id: "12000171857", status: "Fulfillable", title: "Doritos Nacho Cheese Flavored Tortilla Chips", shortfall: 720, available: 720, componentAvailable: 720, baseSavings: 150000, recommendedQty: 720, type: "Produced", asin: "B079X6524F", recoveryPeriod: "P6W1", lastUpdated: "4 hours" },
-            { id: "28400517744", status: "Fulfillable", title: "Ruffles Original Potato Chips, 1oz Bags", shortfall: 840, available: 840, componentAvailable: 840, baseSavings: 210000, recommendedQty: 840, type: "Produced", asin: "B08MMJDVMK", recoveryPeriod: "P6W2", lastUpdated: "4 hours" },
-            { id: "12000171444", status: "Fulfillable", title: "Lay's Classic Potato Chips, 1.5oz Bags", shortfall: 900, available: 900, componentAvailable: 900, baseSavings: 180500, recommendedQty: 900, type: "Produced", asin: "B078HSBHM1", recoveryPeriod: "P6W3", lastUpdated: "5 hours" },
-            { id: "12000170027", status: "Partial", title: "Tostitos Bite Size Tortilla Chips", shortfall: 500, available: 500, componentAvailable: 350, baseSavings: 90200, recommendedQty: 350, type: "Produced", asin: "B01N9O2J2AP", recoveryPeriod: "P7W1", lastUpdated: "5 hours" },
-            { id: "28400679602", status: "Fulfillable", title: "SunChips Original Whole Grain Snacks", shortfall: 412, available: 412, componentAvailable: 412, baseSavings: 75400, recommendedQty: 412, type: "Non-Produced", asin: "B09J1NN28Q", recoveryPeriod: "P7W2", lastUpdated: "6 hours" },
-            { id: "28400083140", status: "Unfulfillable", title: "Quaker Chewy Granola Bars Variety Pack", shortfall: 300, available: 0, componentAvailable: 0, baseSavings: 45000, recommendedQty: 0, type: "Produced", asin: "B0015GQCH8", recoveryPeriod: "P7W3", lastUpdated: "6 hours" },
-            { id: "28400679091", status: "Fulfillable", title: "Cracker Jack Original Caramel Coated Popcorn", shortfall: 620, available: 620, componentAvailable: 620, baseSavings: 110300, recommendedQty: 620, type: "Produced", asin: "B09J1NWLJY", recoveryPeriod: "P8W1", lastUpdated: "7 hours" },
-            { id: "28400314138", status: "Fulfillable", title: "Frito-Lay Fiery Mix Variety Pack", shortfall: 580, available: 580, componentAvailable: 580, baseSavings: 205000, recommendedQty: 580, type: "Produced", asin: "B084ZFB9KS", recoveryPeriod: "P6W1", lastUpdated: "7 hours" },
-            { id: "12000018794", status: "Partial", title: "Munchies Peanut Butter Cheese Crackers", shortfall: 450, available: 450, componentAvailable: 200, baseSavings: 65000, recommendedQty: 200, type: "Non-Produced", asin: "B001E6UUKE", recoveryPeriod: "P6W2", lastUpdated: "8 hours" },
-            { id: "28400737388", status: "Fulfillable", title: "Grandma's Cookies Assortment", shortfall: 510, available: 510, componentAvailable: 510, baseSavings: 89000, recommendedQty: 510, type: "Produced", asin: "B09VJ5ZCVK", recoveryPeriod: "P6W3", lastUpdated: "8 hours" },
-            { id: "28400679732", status: "Fulfillable", title: "Sabritones Puffed Wheat Snacks", shortfall: 340, available: 340, componentAvailable: 340, baseSavings: 54000, recommendedQty: 340, type: "Produced", asin: "B09J1QNTGN", recoveryPeriod: "P7W1", lastUpdated: "9 hours" },
-            { id: "28400070980", status: "Unfulfillable", title: "Rold Gold Caramel Corn", shortfall: 400, available: 0, componentAvailable: 0, baseSavings: 78000, recommendedQty: 0, type: "Produced", asin: "B000UENHBU", recoveryPeriod: "P7W2", lastUpdated: "9 hours" },
-            { id: "12000810091", status: "Fulfillable", title: "Funyuns Pretzel Twists", shortfall: 660, available: 660, componentAvailable: 660, baseSavings: 134000, recommendedQty: 660, type: "Non-Produced", asin: "B0012V2NUG", recoveryPeriod: "P7W3", lastUpdated: "10 hours" },
-            { id: "28400517775", status: "Fulfillable", title: "Stacy's Pita Chips Simply Naked", shortfall: 710, available: 710, componentAvailable: 710, baseSavings: 165000, recommendedQty: 710, type: "Produced", asin: "B08M2XKF7F", recoveryPeriod: "P8W1", lastUpdated: "10 hours" },
-            { id: "28400694353", status: "Partial", title: "Off The Eaten Path Veggie Crisps", shortfall: 480, available: 480, componentAvailable: 300, baseSavings: 92000, recommendedQty: 300, type: "Produced", asin: "B09VJMJM2B", recoveryPeriod: "P6W1", lastUpdated: "11 hours" },
-            { id: "28400679473", status: "Fulfillable", title: "Popcorners Sweet & Salty Kettle Corn", shortfall: 530, available: 530, componentAvailable: 530, baseSavings: 112000, recommendedQty: 530, type: "Produced", asin: "B09J1N4PRN", recoveryPeriod: "P6W2", lastUpdated: "11 hours" },
-            { id: "28400147408", status: "Fulfillable", title: "Bare Baked Crunchy Apple Chips", shortfall: 390, available: 390, componentAvailable: 390, baseSavings: 67000, recommendedQty: 390, type: "Non-Produced", asin: "B00GLL9Z76", recoveryPeriod: "P6W3", lastUpdated: "12 hours" },
-            { id: "28400310413", status: "Unfulfillable", title: "Simply Lay's Sea Salted Thick Cut", shortfall: 620, available: 0, componentAvailable: 0, baseSavings: 145000, recommendedQty: 0, type: "Produced", asin: "B07ZD56WL3", recoveryPeriod: "P7W1", lastUpdated: "12 hours" },
-            { id: "12000170775", status: "Fulfillable", title: "Miss Vickie's Jalapeño Flavored Kettle", shortfall: 470, available: 470, componentAvailable: 470, baseSavings: 88000, recommendedQty: 470, type: "Produced", asin: "B078HQBGPS", recoveryPeriod: "P7W2", lastUpdated: "13 hours" },
-            { id: "12000000881", status: "Fulfillable", title: "Cheetos Puffs Cheese Flavored Snacks", shortfall: 850, available: 850, componentAvailable: 850, baseSavings: 230000, recommendedQty: 850, type: "Produced", asin: "B003QB1A72", recoveryPeriod: "P7W3", lastUpdated: "13 hours" }
-        ];
-
-        let FULFILL_ITEMS = [
-            { id: "12000171956", title: "Frito-Lay Fun Times Mix Variety Pack 40 Count", type: "Produced", asin: "B079DD53W2", reqProd: 44077, memphis: 35761, gp: 0, hamburg: 8316, shortfall: 0, lastUpdated: "a day ago" },
-            { id: "12000100925", title: "Frito-Lay Flamin' Hot Mix, Variety Pack (40 Count)", type: "Produced", asin: "B000R9ALDU", reqProd: 5616, memphis: 4752, gp: 0, hamburg: 864, shortfall: 0, lastUpdated: "a day ago", icons: true },
-            { id: "52000122510", title: "Miss Vickies Kettle Cooked Potato Chips Variety Pack", type: "Produced", asin: "B0029JV98C", reqProd: 4847, memphis: 1504, gp: 0, hamburg: 0, shortfall: 3343, lastUpdated: "a day ago", icons: true },
-            { id: "28400589291", title: "Frito-Lay Baked & Popped Mix Variety Pack", type: "Produced", asin: "B019KE37WO", reqProd: 4536, memphis: 3528, gp: 0, hamburg: 1008, shortfall: 0, lastUpdated: "a day ago" },
-            { id: "28400147392", title: "Sunchips Multigrain Snacks Variety Pack (21 Count)", type: "Produced", asin: "B00GLL9Z7Q", reqProd: 3312, memphis: 3312, gp: 0, hamburg: 0, shortfall: 0, lastUpdated: "a day ago" },
-            { id: "12000181191", title: "Lay's Salt & Vinegar Flavored Potato Chips", type: "Produced", asin: "B07L4LVT68", reqProd: 2500, memphis: 2000, gp: 500, hamburg: 0, shortfall: 0, lastUpdated: "2 days ago" },
-            { id: "28400517843", title: "Doritos Cool Ranch Flavored Tortilla Chips", type: "Produced", asin: "B08M2Z7JGL", reqProd: 7800, memphis: 5000, gp: 1000, hamburg: 1000, shortfall: 800, lastUpdated: "2 days ago", icons: true, hasExcess: true, excessQty: 150 },
-            { id: "28400679053", title: "Cheetos Crunchy Cheese Flavored Snacks", type: "Produced", asin: "B09J1PT7YH", reqProd: 6200, memphis: 4000, gp: 2200, hamburg: 0, shortfall: 0, lastUpdated: "2 days ago" },
-            { id: "28400564632", title: "Ruffles Cheddar & Sour Cream Chips", type: "Produced", asin: "B013TY4VYY", reqProd: 3100, memphis: 1000, gp: 1000, hamburg: 1000, shortfall: 100, lastUpdated: "3 days ago" },
-            { id: "12000101144", title: "Tostitos Scoops! Tortilla Chips", type: "Produced", asin: "B000R9GN50", reqProd: 9400, memphis: 6000, gp: 0, hamburg: 3000, shortfall: 400, lastUpdated: "3 days ago" },
-            { id: "28400516464", title: "Fritos Original Corn Chips", type: "Produced", asin: "B08M2XD5H5", reqProd: 4200, memphis: 2200, gp: 1000, hamburg: 1000, shortfall: 0, lastUpdated: "3 days ago", icons: true },
-            { id: "12000130328", title: "Smartfood White Cheddar Popcorn", type: "Produced", asin: "B00K9W1O6S", reqProd: 5300, memphis: 3000, gp: 1300, hamburg: 1000, shortfall: 0, lastUpdated: "4 days ago" },
-            { id: "28400314091", title: "SunChips Harvest Cheddar", type: "Produced", asin: "B084ZFLPYF", reqProd: 2800, memphis: 1500, gp: 500, hamburg: 500, shortfall: 300, lastUpdated: "4 days ago" },
-            { id: "12000207167", title: "Munchies Cheese Fix Snack Mix", type: "Produced", asin: "B08NTN6Y1F", reqProd: 1900, memphis: 1000, gp: 500, hamburg: 400, shortfall: 0, lastUpdated: "5 days ago" },
-            { id: "52000121964", title: "Rold Gold Tiny Twists Pretzels", type: "Produced", asin: "B07FQVXVC5", reqProd: 6600, memphis: 3600, gp: 2000, hamburg: 1000, shortfall: 0, lastUpdated: "5 days ago", icons: true },
-            { id: "12000230394", title: "Quaker Rice Crisps Caramel", type: "Non-Produced", asin: "B0CFN3697R", reqProd: 3400, memphis: 2000, gp: 1000, hamburg: 0, shortfall: 400, lastUpdated: "6 days ago" },
-            { id: "28400314046", title: "Sabritones Chili & Lime", type: "Produced", asin: "B0842ZR95Y", reqProd: 2100, memphis: 1100, gp: 500, hamburg: 500, shortfall: 0, lastUpdated: "6 days ago" },
-            { id: "12000809996", title: "Grandma's Chocolate Chip Cookies", type: "Non-Produced", asin: "B001E6PC8O", reqProd: 4500, memphis: 2500, gp: 1000, hamburg: 1000, shortfall: 0, lastUpdated: "1 week ago" },
-            { id: "28400199148", title: "Stacy's Parmesan Garlic & Herb", type: "Produced", asin: "B0005Z6FYA", reqProd: 5200, memphis: 3000, gp: 1000, hamburg: 1200, shortfall: 0, lastUpdated: "1 week ago", icons: true },
-            { id: "28400694339", title: "Off The Eaten Path Jalapeño Crisps", type: "Produced", asin: "B09QP7Z5Y3", reqProd: 1800, memphis: 1000, gp: 400, hamburg: 0, shortfall: 400, lastUpdated: "1 week ago" },
-            { id: "12000809972", title: "Bare Baked Crunchy Banana Chips", type: "Non-Produced", asin: "B000R9AL08", reqProd: 2900, memphis: 1900, gp: 500, hamburg: 500, shortfall: 0, lastUpdated: "1 week ago" },
-            { id: "2840064088", title: "Simply Doritos White Corn", type: "Produced", asin: "B000UENHH4", reqProd: 6100, memphis: 4000, gp: 1100, hamburg: 1000, shortfall: 0, lastUpdated: "2 weeks ago" },
-            { id: "12000809965", title: "Lay's Barbecue Flavored Potato Chips", type: "Produced", asin: "B000R9AKYU", reqProd: 8200, memphis: 5000, gp: 2200, hamburg: 1000, shortfall: 0, lastUpdated: "2 weeks ago" },
-            { id: "28400314077", title: "Popcorners Spicy Queso", type: "Produced", asin: "B0842ZRVW5", reqProd: 3700, memphis: 2000, gp: 1000, hamburg: 500, shortfall: 200, lastUpdated: "2 weeks ago" },
-            { id: "12000183409", title: "Cheetos Puffs Flamin' Hot", type: "Produced", asin: "B08X6DHHL1", reqProd: 5400, memphis: 3400, gp: 1000, hamburg: 1000, shortfall: 0, lastUpdated: "2 weeks ago", icons: true },
-            { id: "00030000169018", title: "Frito-Lay Party Mix Variety Pack", type: "Produced", asin: "B000PWNIJI", reqProd: 9900, memphis: 6000, gp: 2000, hamburg: 1000, shortfall: 900, lastUpdated: "3 weeks ago" },
-            { id: "12000001703", title: "Doritos Spicy Sweet Chili", type: "Produced", asin: "B00MEWQHF4", reqProd: 4300, memphis: 2300, gp: 1000, hamburg: 1000, shortfall: 0, lastUpdated: "3 weeks ago" },
-            { id: "28400517942", title: "Ruffles Flamin' Hot Potato Chips", type: "Produced", asin: "B08M2W33G6", reqProd: 3600, memphis: 2000, gp: 1000, hamburg: 600, shortfall: 0, lastUpdated: "3 weeks ago" },
-            { id: "00030000573259", title: "Tostitos Hint of Lime", type: "Produced", asin: "B08XD54HXX", reqProd: 5500, memphis: 3000, gp: 1500, hamburg: 1000, shortfall: 0, lastUpdated: "1 month ago" },
-            { id: "12000172090", title: "SunChips French Onion", type: "Produced", asin: "B079X66TYZ", reqProd: 2600, memphis: 1600, gp: 500, hamburg: 500, shortfall: 0, lastUpdated: "1 month ago" }
-        ];
-
-        // Estado Global
-        let activeTab = 'cuts'; // 'cuts' | 'fulfill'
-        let sortState = { cuts: { col: null, asc: true }, fulfill: { col: null, asc: true } };
-        let pageState = { cuts: { current: 1, size: 10 }, fulfill: { current: 1, size: 10 } };
-        let activeFilter = 'All';
-        let searchQuery = '';
-        let selectedIds = new Set();
-        let selectedFulfillIds = new Set();
-        let modalState = {}; // { id: { included, qty, savings, error, warning } }
-        let modalCutsState = {}; // { id: { qty, originalItem } }
-
-        // Elementos DOM
-        const searchInput = document.getElementById('searchInput');
-        const filterSelect = document.getElementById('filterSelect');
-        const mainTbody = document.getElementById('mainTbody');
-        const emptyState = document.getElementById('emptyState');
-        const btnFulfillMain = document.getElementById('btnFulfillMain');
-        const modalOverlay = document.getElementById('modalOverlay');
-        const modalTbody = document.getElementById('modalTbody');
-        const btnApply = document.getElementById('btnApply');
-        const modalTotals = document.getElementById('modalTotals');
-        const debtWarning = document.getElementById('debtWarning');
-        const successAlert = document.getElementById('successAlert');
-        const successMsg = document.getElementById('successMsg');
-
-        // Elementos DOM Fulfill
-        const tabFulfill = document.getElementById('tabFulfill');
-        const tabCuts = document.getElementById('tabCuts');
-        const cutsView = document.getElementById('cutsView');
-        const fulfillView = document.getElementById('fulfillView');
-        const fulfillTbody = document.getElementById('fulfillTbody');
-        const searchFulfillInput = document.getElementById('searchFulfillInput');
-        const btnCutsMain = document.getElementById('btnCutsMain');
-        const cutsTitle = document.getElementById('cutsTitle');
-        const fulfillTitle = document.getElementById('fulfillTitle');
-
-        // Modal Cuts
-        const modalCutsOverlay = document.getElementById('modalCutsOverlay');
-        const closeModalCutsBtn = document.getElementById('closeModalCutsBtn');
-        const btnCancelCuts = document.getElementById('btnCancelCuts');
-        const btnApplyCuts = document.getElementById('btnApplyCuts');
-        const modalCutsTbody = document.getElementById('modalCutsTbody');
-        const modalCutsPlant = document.getElementById('modalCutsPlant');
-        const modalCutsReason = document.getElementById('modalCutsReason');
-        const modalCutsComment = document.getElementById('modalCutsComment');
-
-        // Formateadores
-        const formatMoney = (val) => '$' + val.toLocaleString('en-US');
-        const formatNum = (val) => val.toLocaleString('en-US');
-
-        function getIconsHtml(item) {
-            if (!item.icons) return '';
-            
-            // Proveer datos por defecto si el item tiene el ícono pero aún no tiene un auditTrail (como los mock data originales)
-            const reason = (item.auditTrail?.reason || 'System Allocation').replace(/"/g, '&quot;');
-            const comment = (item.auditTrail?.comment || 'Item adjusted by planner.').replace(/"/g, '&quot;');
-            const author = (item.auditTrail?.author || 'System').replace(/"/g, '&quot;');
-            const date = (item.auditTrail?.date || 'Recent').replace(/"/g, '&quot;');
-
-            let html = `<div class="flex items-center justify-center gap-2">`;
-            
-            html += `
-                <div class="bg-[#EBF6FF] p-[3.5px] rounded border border-[#0597F2] audit-trigger cursor-help flex items-center justify-center transition-colors hover:bg-blue-100"
-                     data-reason="${reason}" data-comment="${comment}" data-author="${author}" data-date="${date}" data-type="default">
-                    <i data-lucide="arrow-right-left" class="w-3 h-3 text-[#0597F2]" style="stroke-width: 2.5px;"></i>
-                </div>
-            `;
-            
-            if (item.hasExcess) {
-                html += `
-                    <div class="bg-[#FFF8E6] p-[3.5px] rounded border border-[#F59E0B] audit-trigger cursor-help flex items-center justify-center transition-colors hover:bg-orange-100"
-                         data-type="box" data-excess="${formatNum(item.excessQty)}">
-                        <i data-lucide="package" class="w-3 h-3 text-[#F59E0B]" style="stroke-width: 2.5px;"></i>
-                    </div>
-                `;
-            }
-            
-            html += `</div>`;
-            return html;
-        }
-
-        function updateFilterOptions() {
-            const counts = {
-                All: ALL_ITEMS.length,
-                Fulfillable: ALL_ITEMS.filter(i => i.status === 'Fulfillable').length,
-                Partial: ALL_ITEMS.filter(i => i.status === 'Partial').length,
-                Unfulfillable: ALL_ITEMS.filter(i => i.status === 'Unfulfillable').length
-            };
-            
-            filterSelect.innerHTML = `
-                <option value="All">Filter by: All (${counts.All})</option>
-                <option value="Fulfillable">Fulfillable (${counts.Fulfillable})</option>
-                <option value="Partial">Partial (${counts.Partial})</option>
-                <option value="Unfulfillable">Unfulfillable (${counts.Unfulfillable})</option>
-            `;
-            filterSelect.value = activeFilter;
-            filterSelect.className = "custom-select border border-gray-300 rounded text-sm bg-white focus:outline-[#0597F2]";
-            filterSelect.style.minWidth = "140px";
-        }
-
-        // Generic Sort Function
-        function sortData(data, sortConfig) {
-            if (!sortConfig.col) return data;
-            return [...data].sort((a, b) => {
-                let valA = a[sortConfig.col];
-                let valB = b[sortConfig.col];
-                
-                // Parse strings with formatted numbers/currency for proper numerical sort
-                if (typeof valA === 'string' && valA.match(/^[\$\d,]+$/)) valA = parseFloat(valA.replace(/[\$,]/g, ''));
-                if (typeof valB === 'string' && valB.match(/^[\$\d,]+$/)) valB = parseFloat(valB.replace(/[\$,]/g, ''));
-                if (typeof valA === 'string') valA = valA.toLowerCase();
-                if (typeof valB === 'string') valB = valB.toLowerCase();
-
-                if (valA < valB) return sortConfig.asc ? -1 : 1;
-                if (valA > valB) return sortConfig.asc ? 1 : -1;
-                return 0;
-            });
-        }
-
-        function updateSortUI(tableId, sortConfig) {
-            document.querySelectorAll(`#${tableId} th[data-sort] .sort-icon`).forEach(icon => {
-                icon.classList.remove('active');
-                icon.innerHTML = `<polyline points="7 15 12 20 17 15"></polyline><polyline points="7 9 12 4 17 9"></polyline>`; // Default up-down
-            });
-            if (sortConfig.col) {
-                const activeTh = document.querySelector(`#${tableId} th[data-sort="${sortConfig.col}"] .sort-icon`);
-                if (activeTh) {
-                    activeTh.classList.add('active');
-                    activeTh.innerHTML = sortConfig.asc ? `<polyline points="18 15 12 9 6 15"></polyline>` : `<polyline points="6 9 12 15 18 9"></polyline>`;
-                    lucide.createIcons();
-                }
-            }
-        }
-
-        // Renderizado del Dashboard
-        function renderDashboard() {
-            mainTbody.innerHTML = '';
-            
-            // Update filter dropdown text dynamically
-            updateFilterOptions();
-            
-            // Lógica de filtrado y búsqueda (React code logic)
-            let filtered = ALL_ITEMS;
-            if (activeFilter !== 'All') filtered = filtered.filter(i => i.status === activeFilter);
-            if (searchQuery.trim()) {
-                const q = searchQuery.toLowerCase();
-                filtered = filtered.filter(i => i.id.toLowerCase().includes(q) || i.title.toLowerCase().includes(q) || i.asin.toLowerCase().includes(q));
-            }
-            
-            // Update Title
-            cutsTitle.textContent = `Cuts (${filtered.length})`;
-
-            if (filtered.length === 0) {
-                emptyState.classList.remove('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-                
-            // Aplicar Sort
-            filtered = sortData(filtered, sortState.cuts);
-            updateSortUI('mainTable', sortState.cuts);
-
-            // Pagination Logic
-            const totalItems = filtered.length;
-            const totalPages = Math.ceil(totalItems / pageState.cuts.size);
-            if (pageState.cuts.current > totalPages && totalPages > 0) pageState.cuts.current = totalPages;
-            
-            const startIndex = (pageState.cuts.current - 1) * pageState.cuts.size;
-            const endIndex = Math.min(startIndex + pageState.cuts.size, totalItems);
-            const paginatedItems = filtered.slice(startIndex, endIndex);
-
-            // Update Pagination UI
-            document.getElementById('pageInfoCuts').textContent = totalItems > 0 ? `${startIndex + 1}-${endIndex} of ${totalItems}` : `0-0 of 0`;
-            document.getElementById('btnPrevCuts').disabled = pageState.cuts.current === 1;
-            document.getElementById('btnNextCuts').disabled = pageState.cuts.current >= totalPages;
-            document.getElementById('pageSizeCuts').value = pageState.cuts.size;
-
-            paginatedItems.forEach(item => {
-                    const isUnfulfillable = item.status === 'Unfulfillable';
-                    const isChecked = selectedIds.has(item.id);
-                    
-                    const tr = document.createElement('tr');
-                    if (isUnfulfillable) tr.classList.add('bg-white'); // Removed opacity-60 and bg-gray-50 so row looks active
-                    if (isChecked) tr.classList.add('bg-blue-50');
-
-                    tr.innerHTML = `
-                        <td class="text-center">
-                            <input type="checkbox" class="main-checkbox" data-id="${item.id}" ${isUnfulfillable ? 'disabled' : ''} ${isChecked ? 'checked' : ''}>
-                        </td>
-                        <td>
-                            <div class="flex items-center gap-2">
-                                <span class="font-mono text-xs font-normal text-gray-700">${item.id}</span>
-                                ${getIconsHtml(item)}
-                            </div>
-                        </td>
-                        <td><span class="status-badge status-${item.status}">${item.status}</span></td>
-                        <td class="text-xs truncate max-w-[200px]" title="${item.title}">${item.title}</td>
-                        <td class="text-xs text-gray-500">${item.type}</td>
-                        <td class="text-xs text-gray-500 font-mono">${item.asin}</td>
-                        <td class="text-right font-medium">${formatNum(item.shortfall)}</td>
-                        <td class="text-right font-normal text-gray-900">${formatNum(item.recommendedQty)}</td>
-                        <td class="text-right font-bold text-gray-900">${formatMoney(item.baseSavings)}</td>
-                        <td class="text-xs text-gray-500">${item.recoveryPeriod}</td>
-                        <td class="text-xs text-blue-500">${item.lastUpdated}</td>
-                    `;
-                    mainTbody.appendChild(tr);
-                });
-            }
-
-            // Eventos Checkboxes Dashboard
-            document.querySelectorAll('.main-checkbox:not(:disabled)').forEach(cb => {
-                cb.addEventListener('change', (e) => {
-                    if(e.target.checked) selectedIds.add(e.target.dataset.id);
-                    else selectedIds.delete(e.target.dataset.id);
-                    updateDashboardControls();
-                });
-            });
-            updateDashboardControls();
-            
-            lucide.createIcons();
-        }
-
-        // Renderizado Dashboard Fulfill
-        function renderFulfillDashboard() {
-            fulfillTbody.innerHTML = '';
-            
-            let filtered = FULFILL_ITEMS;
-            const q = searchFulfillInput.value.toLowerCase().trim();
-            if (q) {
-                filtered = filtered.filter(i => i.id.toLowerCase().includes(q) || i.title.toLowerCase().includes(q) || i.asin.toLowerCase().includes(q));
-            }
-            
-            // Update Title
-            fulfillTitle.textContent = `Production Items (${filtered.length})`;
-
-            // Aplicar Sort
-            filtered = sortData(filtered, sortState.fulfill);
-            updateSortUI('fulfillTable', sortState.fulfill);
-
-            // Pagination Logic Fulfill
-            const totalItems = filtered.length;
-            const totalPages = Math.ceil(totalItems / pageState.fulfill.size);
-            if (pageState.fulfill.current > totalPages && totalPages > 0) pageState.fulfill.current = totalPages;
-            
-            const startIndex = (pageState.fulfill.current - 1) * pageState.fulfill.size;
-            const endIndex = Math.min(startIndex + pageState.fulfill.size, totalItems);
-            const paginatedItems = filtered.slice(startIndex, endIndex);
-
-            // Update Pagination UI Fulfill
-            document.getElementById('pageInfoFulfill').textContent = totalItems > 0 ? `${startIndex + 1}-${endIndex} of ${totalItems}` : `0-0 of 0`;
-            document.getElementById('btnPrevFulfill').disabled = pageState.fulfill.current === 1;
-            document.getElementById('btnNextFulfill').disabled = pageState.fulfill.current >= totalPages;
-            document.getElementById('pageSizeFulfill').value = pageState.fulfill.size;
-
-            paginatedItems.forEach(item => {
-                const tr = document.createElement('tr');
-                const isShortfall = item.shortfall > 0;
-
-                tr.innerHTML = `
-                    <td class="text-center w-8"><input type="checkbox" class="fulfill-checkbox" data-id="${item.id}" ${selectedFulfillIds.has(item.id) ? 'checked' : ''}></td>
-                    <td>
-                        <div class="flex items-center gap-2">
-                            <span class="font-mono text-xs font-normal text-gray-700">${item.id}</span>
-                            ${getIconsHtml(item)}
-                        </div>
-                    </td>
-                    <td class="text-xs truncate max-w-[200px]" title="${item.title}">${item.title}</td>
-                    <td class="text-xs text-gray-500">${item.type}</td>
-                    <td class="text-xs text-gray-500 font-mono">${item.asin}</td>
-                    <td class="text-right font-medium text-gray-900">${formatNum(item.reqProd)}</td>
-                    <td class="text-right text-gray-700">${formatNum(item.memphis)}</td>
-                    <td class="text-right text-gray-700">${formatNum(item.gp)}</td>
-                    <td class="text-right text-gray-700">${formatNum(item.hamburg)}</td>
-                    <td class="text-right font-bold ${isShortfall ? 'text-red-600' : 'text-gray-900'}">${formatNum(item.shortfall)}</td>
-                    <td class="text-xs text-blue-500 hover:underline cursor-pointer">${item.lastUpdated}</td>
-                `;
-                fulfillTbody.appendChild(tr);
-            });
-            // Eventos Checkboxes Fulfill
-            document.querySelectorAll('.fulfill-checkbox').forEach(cb => {
-                cb.addEventListener('change', (e) => {
-                    if(e.target.checked) selectedFulfillIds.add(e.target.dataset.id);
-                    else selectedFulfillIds.delete(e.target.dataset.id);
-                    updateFulfillControls();
-                });
-            });
-            updateFulfillControls();
-            
-            lucide.createIcons();
-        }
-
-        function updateFulfillControls() {
-            btnCutsMain.disabled = selectedFulfillIds.size === 0;
-        }
-
-        function updateDashboardControls() {
-            btnFulfillMain.disabled = selectedIds.size === 0;
-            btnFulfillMain.textContent = selectedIds.size > 0 ? `Fulfill items (${selectedIds.size})` : 'Fulfill items';
-        }
-
-        // Búsqueda y Filtros
-        searchInput.addEventListener('input', (e) => { 
-            searchQuery = e.target.value; 
-            pageState.cuts.current = 1; // Reset to page 1 on search
-            renderDashboard(); 
-        });
-        filterSelect.addEventListener('change', (e) => { 
-            activeFilter = e.target.value; 
-            pageState.cuts.current = 1; // Reset to page 1 on filter change
-            renderDashboard(); 
-        });
-        searchFulfillInput.addEventListener('input', () => {
-            pageState.fulfill.current = 1; // Reset to page 1 on search
-            renderFulfillDashboard();
-        });
-
-        // Manejo Global del Tooltip
-        const globalTooltip = document.getElementById('globalTooltip');
-        const ttReason = document.getElementById('ttReason');
-        const ttComment = document.getElementById('ttComment');
-        const ttAuthor = document.getElementById('ttAuthor');
-        const ttDate = document.getElementById('ttDate');
-        const ttDefaultContent = document.getElementById('ttDefaultContent');
-        const ttBoxContent = document.getElementById('ttBoxContent');
-        const ttExcessQty = document.getElementById('ttExcessQty');
-        
-        document.body.addEventListener('mouseover', (e) => {
-            const trigger = e.target.closest('.audit-trigger');
-            if (trigger) {
-                if (trigger.dataset.type === 'box') {
-                    ttDefaultContent.classList.add('hidden');
-                    ttBoxContent.classList.remove('hidden');
-                    ttExcessQty.textContent = trigger.dataset.excess;
-                } else {
-                    ttDefaultContent.classList.remove('hidden');
-                    ttBoxContent.classList.add('hidden');
-                    ttReason.textContent = trigger.dataset.reason;
-                    ttComment.textContent = trigger.dataset.comment;
-                    ttAuthor.textContent = trigger.dataset.author;
-                    ttDate.textContent = trigger.dataset.date;
-                }
-                
-                const rect = trigger.getBoundingClientRect();
-                
-                // Centrar arriba del icono con transform css
-                globalTooltip.style.transform = `translate(-50%, calc(-100% - 8px))`;
-                globalTooltip.style.left = `${rect.left + rect.width / 2}px`;
-                globalTooltip.style.top = `${rect.top}px`;
-                
-                globalTooltip.classList.remove('opacity-0', 'pointer-events-none');
-                globalTooltip.classList.add('opacity-100');
-            }
-        });
-
-        document.body.addEventListener('mouseout', (e) => {
-            const trigger = e.target.closest('.audit-trigger');
-            if (trigger) {
-                globalTooltip.classList.remove('opacity-100');
-                globalTooltip.classList.add('opacity-0', 'pointer-events-none');
-            }
-        });
-
-        // GESTIÓN DE TABS
-        function setActiveTab(tab) {
-            activeTab = tab;
-            if (tab === 'cuts') {
-                tabCuts.className = "bg-[#0597F2] text-white font-medium text-xs h-full px-6 rounded-full flex flex-col items-center justify-center leading-none gap-0.5 shadow-sm";
-                tabCuts.querySelector('span:nth-child(2)').className = "text-[8px] font-normal text-blue-100";
-                
-                tabFulfill.className = "text-gray-700 font-medium text-xs hover:bg-gray-200 transition h-full px-6 rounded-full flex flex-col items-center justify-center leading-none gap-0.5";
-                tabFulfill.querySelector('span:nth-child(2)').className = "text-[8px] font-normal text-gray-500";
-
-                cutsView.classList.remove('hidden');
-                fulfillView.classList.add('hidden');
-                renderDashboard();
-            } else {
-                tabFulfill.className = "bg-[#0597F2] text-white font-medium text-xs h-full px-6 rounded-full flex flex-col items-center justify-center leading-none gap-0.5 shadow-sm";
-                tabFulfill.querySelector('span:nth-child(2)').className = "text-[8px] font-normal text-blue-100";
-
-                tabCuts.className = "text-gray-700 font-medium text-xs hover:bg-gray-200 transition h-full px-6 rounded-full flex flex-col items-center justify-center leading-none gap-0.5";
-                tabCuts.querySelector('span:nth-child(2)').className = "text-[8px] font-normal text-gray-500";
-
-                fulfillView.classList.remove('hidden');
-                cutsView.classList.add('hidden');
-                renderFulfillDashboard();
-            }
-        }
-
-        tabCuts.addEventListener('click', () => setActiveTab('cuts'));
-        tabFulfill.addEventListener('click', () => setActiveTab('fulfill'));
-
-        // ABRIR MODAL
-        btnFulfillMain.addEventListener('click', () => {
-            // Inicializar estado del modal copiando la lógica de React
-            modalState = {};
-            ALL_ITEMS.filter(i => selectedIds.has(i.id)).forEach(item => {
-                modalState[item.id] = {
-                    included: true,
-                    qty: item.recommendedQty,
-                    savings: item.baseSavings,
-                    error: null,
-                    warning: null
-                };
-            });
-            renderModal();
-            modalOverlay.classList.add('active');
-        });
-
-        // CERRAR MODAL
-        const closeModal = () => modalOverlay.classList.remove('active');
-        document.getElementById('btnCancel').addEventListener('click', closeModal);
-        document.getElementById('closeModal').addEventListener('click', closeModal);
-
-        // --- LÓGICA MODAL CUTS (FULFILL -> CUTS) ---
-        function validateCutsModal() {
-            const plantSelected = modalCutsPlant.value !== '';
-            const reasonSelected = modalCutsReason.value !== '';
-            let validQtys = true;
-
-            Object.values(modalCutsState).forEach(state => {
-                const qtyNum = Number(state.qty);
-                if (isNaN(qtyNum) || qtyNum <= 0) validQtys = false;
-            });
-
-            const isValid = plantSelected && reasonSelected && validQtys && Object.keys(modalCutsState).length > 0;
-            
-            if (isValid) {
-                btnApplyCuts.disabled = false;
-                btnApplyCuts.classList.remove('bg-gray-200', 'text-gray-500', 'hover:bg-gray-200', 'cursor-not-allowed');
-            } else {
-                btnApplyCuts.disabled = true;
-                btnApplyCuts.classList.add('bg-gray-200', 'text-gray-500', 'hover:bg-gray-200', 'cursor-not-allowed');
-            }
-        }
-
-        btnCutsMain.addEventListener('click', () => {
-            modalCutsState = {};
-            FULFILL_ITEMS.filter(i => selectedFulfillIds.has(i.id)).forEach(item => {
-                modalCutsState[item.id] = { qty: item.reqProd || 100, originalItem: item };
-            });
-            renderCutsModal();
-            modalCutsOverlay.classList.remove('hidden');
-        });
-
-        const closeCutsModal = () => {
-            modalCutsOverlay.classList.add('hidden');
-            modalCutsPlant.value = '';
-            modalCutsReason.value = '';
-            modalCutsComment.value = '';
-            validateCutsModal();
-        };
-
-        btnCancelCuts.addEventListener('click', closeCutsModal);
-        closeModalCutsBtn.addEventListener('click', closeCutsModal);
-
-        modalCutsPlant.addEventListener('change', validateCutsModal);
-        modalCutsReason.addEventListener('change', validateCutsModal);
-
-        function renderCutsModal() {
-            modalCutsTbody.innerHTML = '';
-            
-            Object.keys(modalCutsState).forEach(id => {
-                const state = modalCutsState[id];
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="px-4 py-3 font-mono text-gray-700">${id}</td>
-                    <td class="px-4 py-3 text-gray-800 truncate max-w-[200px]">${state.originalItem.title}</td>
-                    <td class="px-4 py-3">
-                        <input type="number" class="input-qty-cuts border border-gray-300 rounded px-2 py-1.5 w-full text-gray-700 focus:outline-[#0597F2]" data-id="${id}" value="${state.qty}">
-                    </td>
-                `;
-                modalCutsTbody.appendChild(tr);
-            });
-
-            document.querySelectorAll('.input-qty-cuts').forEach(input => {
-                input.addEventListener('input', (e) => {
-                    modalCutsState[e.target.dataset.id].qty = e.target.value;
-                    validateCutsModal();
-                });
-            });
-
-            validateCutsModal();
-        }
-
-        // APPLY CUTS ACTION
-        btnApplyCuts.addEventListener('click', () => {
-            const originalHTML = btnApplyCuts.innerHTML;
-            btnApplyCuts.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Cutting...';
-            btnApplyCuts.disabled = true;
-            lucide.createIcons();
-
-            setTimeout(() => {
-                let finalCount = 0;
-                
-                Object.keys(modalCutsState).forEach(id => {
-                    const state = modalCutsState[id];
-                    const movedItemIndex = FULFILL_ITEMS.findIndex(i => i.id === id);
-                    
-                    if (movedItemIndex > -1) {
-                        const movedItem = FULFILL_ITEMS[movedItemIndex];
-                        FULFILL_ITEMS.splice(movedItemIndex, 1);
+                <!-- Client Filter (Custom Dropdown) -->
+                <div class="filter-dropdown multi-select" data-filter="clientFilter">
+                    <button class="dropdown-trigger"><span>All Customers</span> <i data-lucide="chevron-down" style="width:14px;height:14px;"></i></button>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-item mixed-item active"><span>All Customers</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>Amazon.com</span><i data-lucide="check" class="check-icon"></i></div>
                         
-                        ALL_ITEMS.unshift({
-                            id: movedItem.id,
-                            status: "Unfulfillable",
-                            title: movedItem.title,
-                            type: movedItem.type,
-                            asin: movedItem.asin,
-                            shortfall: Number(state.qty),
-                            available: 0,
-                            componentAvailable: 0,
-                            baseSavings: 150000, // Simulated static savings
-                            recommendedQty: 0,
-                            recoveryPeriod: "P8W1",
-                            lastUpdated: "just now",
-                            icons: true,
-                            auditTrail: {
-                                reason: modalCutsReason.value,
-                                comment: modalCutsComment.value.trim() || "No comment provided",
-                                author: "Zack Shepherd",
-                                date: "April 13 2026, 10:55 am"
-                            }
-                        });
-                        finalCount++;
-                    }
-                });
+                        <!-- Nested Submenu Item -->
+                        <div class="dropdown-item has-submenu">
+                            <span>Amazon fresh</span><i data-lucide="chevron-right" style="width:14px;height:14px;color:#6b7280;"></i>
+                            <div class="dropdown-submenu">
+                                <div class="submenu-title">All Vendor Code</div>
+                                <div class="submenu-item">FRIT1</div>
+                                <div class="submenu-item-unselected">PGTR1</div>
+                                <div class="submenu-item-unselected">PEQF9</div>
+                                <div class="submenu-item-unselected">PEPQU</div>
+                            </div>
+                        </div>
 
-                closeCutsModal();
-                selectedFulfillIds.clear();
-                
-                if (activeTab === 'cuts') renderDashboard();
-                else renderFulfillDashboard();
-                
-                successMsg.innerHTML = `Success! Moved ${finalCount} items to the cuts list.`;
-                successAlert.classList.remove('hidden');
-                lucide.createIcons();
-                
-                setTimeout(() => { successAlert.classList.add('hidden'); }, 6000);
+                        <div class="dropdown-item"><span>Catalog</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>Walmart</span><i data-lucide="check" class="check-icon"></i></div>
+                    </div>
+                </div>
 
-                btnApplyCuts.innerHTML = originalHTML;
-                // Validation will naturally re-run when modal is closed
-            }, 800);
-        });
+                <!-- Region Filter (Custom Dropdown) -->
+                <div class="filter-dropdown multi-select" data-filter="regionFilter">
+                    <button class="dropdown-trigger"><span>All Region</span> <i data-lucide="chevron-down" style="width:14px;height:14px;"></i></button>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-item mixed-item active"><span>All Region</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>Central North</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>Central South</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>North</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>North East</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>North West</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>South Metro</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>South Sunbelt</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>West California</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>West Mountain</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span>National Delete</span><i data-lucide="check" class="check-icon"></i></div>
+                    </div>
+                </div>
 
-        // --- FIN LÓGICA MODAL CUTS ---
+                <!-- Tag Filter (Custom Dropdown) -->
+                <div class="filter-dropdown multi-select" data-filter="tagFilter">
+                    <button class="dropdown-trigger"><span>All Tags</span> <i data-lucide="chevron-down" style="width:14px;height:14px;"></i></button>
+                    <div class="dropdown-menu" id="tagFilterMenu">
+                        <div class="dropdown-item mixed-item active"><span>All Tags</span><i data-lucide="check" class="check-icon"></i></div>
+                        <!-- Tag filter options will be injected by JS -->
+                    </div>
+                </div>
 
-        // LÓGICA DE VALIDACIÓN (Copiada del React)
-        function validateQty(item, qtyStr) {
-            const num = Number(qtyStr.trim());
-            if (qtyStr.trim() === "" || isNaN(num) || num < 0 || !Number.isInteger(num)) {
-                return { error: "Please enter a valid whole number", warning: null, savings: 0 };
-            }
+                <!-- Status Filter (Custom Dropdown) replaced Add Filter -->
+                <div class="filter-dropdown single-select" data-filter="statusFilter">
+                    <button class="dropdown-trigger"><span>Status</span> <i data-lucide="chevron-down" style="width:14px;height:14px;"></i></button>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-item" style="color: #6b7280; font-weight:500;"><span>All Statuses</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span style="display:flex; align-items:center; gap:8px;"><div class="status-dot dot-pipeline"></div> Pipeline (5)</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span style="display:flex; align-items:center; gap:8px;"><div class="status-dot dot-prelaunch"></div> Pre-launch (2)</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span style="display:flex; align-items:center; gap:8px;"><div class="status-dot dot-active"></div> Active (10)</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span style="display:flex; align-items:center; gap:8px;"><div class="status-dot dot-hubactive"></div> Hub Active (5)</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span style="display:flex; align-items:center; gap:8px;"><div class="status-dot dot-lto"></div> LTO (3)</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span style="display:flex; align-items:center; gap:8px;"><div class="status-dot dot-upcchanges"></div> UPC Changes (0)</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span style="display:flex; align-items:center; gap:8px;"><div class="status-dot dot-discontinuing"></div> Discontinuing (6)</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span style="display:flex; align-items:center; gap:8px;"><div class="status-dot dot-discontinued"></div> DISCO (6)</span><i data-lucide="check" class="check-icon"></i></div>
+                        <div class="dropdown-item"><span style="display:flex; align-items:center; gap:8px;"><div class="status-dot dot-unknown"></div> Unknown - review (4)</span><i data-lucide="check" class="check-icon"></i></div>
+                    </div>
+                </div>
 
-            const scale = item.recommendedQty > 0 ? num / item.recommendedQty : 0;
-            const scaledSavings = Math.round(item.baseSavings * scale);
+            </div>
+            <div class="actions-right">
 
-            let warning = null;
-            if (num > item.available) warning = "Req > Available inventory";
-            else if (num > item.componentAvailable) warning = "Req > Component availability";
+                <button id="openTagModalBtn" class="btn btn-outline"><i data-lucide="tag" style="width: 14px; height: 14px;"></i> Tag</button>
+                <button class="btn btn-outline"><i data-lucide="x" style="width: 14px; height: 14px;"></i> Dismiss</button>
+            </div>
+        </section>
 
-            return { error: null, warning, savings: scaledSavings };
-        }
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th><input type="checkbox"></th>
+                        <th>
+                            <label class="header-toggle">
+                                <input type="checkbox">
+                                <span class="slider"></span>
+                            </label>
+                        </th>
+                        <th><div style="display:flex; align-items:center;">STATUS <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">BU <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">CUSTOMER <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">VENDOR CODE <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">RETAILER SKU <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">UPC <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">GTIN <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">ITEM TITLE <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">TAGS <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">SIZE CATEGORY <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">FINANCE PACK SIZE <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">PACK COUNT <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">BRAND <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">SUB-BRAND <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">REGION <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">CATEGORY <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">SUB-CATEGORY <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">FORM <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">UNIT COST <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">SRP <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">CASE COST <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">RSV PY <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">RSV YTD <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">2024 RSV <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">RESET DATE <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">IN-MARKET DATE <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                        <th><div style="display:flex; align-items:center;">LAST UPDATED <i data-lucide="chevrons-up-down" style="width:12px; height:12px; margin-left:4px; opacity:0.4;"></i></div></th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- Table rows will be inserted here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
 
-        // RENDERIZAR MODAL
-        function renderModal() {
-            modalTbody.innerHTML = '';
-            let totalSav = 0;
-            let totalCount = 0;
-            let hasDebt = false;
-            let hasError = false;
+        <section class="pagination" style="margin-top: 16px; justify-content: flex-end; padding-right: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 13px; color: var(--muted-text);">Rows per page:</span>
+                <select class="page-size-select" style="width: 70px;">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+        </section>
+    </main>
 
-            ALL_ITEMS.filter(i => modalState[i.id]).forEach(item => {
-                const state = modalState[item.id];
-                
-                if (state.included) {
-                    if (!state.error) {
-                        totalSav += state.savings;
-                        totalCount++;
-                    } else {
-                        hasError = true;
-                    }
-                    if (state.qty > item.componentAvailable) hasDebt = true;
-                }
+    <!-- SIDE DRAWER FOR COMPLEX INTERACTIONS -->
+    <div class="side-drawer-overlay" id="drawerOverlay"></div>
+    <div class="side-drawer" id="productDrawer">
+        <div class="drawer-header">
+            <h2>Product Details</h2>
+            <button class="close-drawer" id="closeDrawerBtn"><i data-lucide="x"></i></button>
+        </div>
+        <div class="drawer-content" id="drawerContent">
+            <!-- Dynamic content will be injected here -->
+            <p style="color: var(--muted-text); font-size: 14px;">Select a product from the table to view or edit details.</p>
+        </div>
+        <div class="drawer-footer">
+            <button class="btn btn-secondary" id="cancelDrawerBtn">Cancel</button>
+            <button class="btn btn-primary">Save Changes</button>
+        </div>
+    </div>
 
-                const tr = document.createElement('tr');
-                tr.className = !state.included ? 'opacity-50' : '';
-                tr.innerHTML = `
-                    <td class="px-3 py-4 border-b border-gray-100"><input type="checkbox" class="modal-cb" data-id="${item.id}" ${state.included ? 'checked' : ''}></td>
-                    <td class="px-3 py-4 border-b border-gray-100"><span class="status-badge status-${item.status}">${item.status}</span></td>
-                    <td class="px-3 py-4 border-b border-gray-100 text-xs font-medium max-w-[150px] truncate" title="${item.title}">${item.title}</td>
-                    <td class="px-3 py-4 border-b border-gray-100 text-right text-xs text-gray-500">${formatNum(item.available)}</td>
-                    <td class="px-3 py-4 border-b border-gray-100 text-right">
-                        <input type="number" class="input-qty ${state.error ? 'error' : state.warning ? 'warning' : ''}" data-id="${item.id}" value="${state.qty}" ${!state.included ? 'disabled' : ''}>
-                        ${state.error ? '<span class="msg-text error">' + state.error + '</span>' : ''}
-                        ${state.warning ? '<span class="msg-text warning">' + state.warning + '</span>' : ''}
-                    </td>
-                    <td class="px-3 py-4 border-b border-gray-100 text-right font-bold text-gray-900">
-                        ${!state.error ? formatMoney(state.savings) : '-'}
-                    </td>
-                `;
-                modalTbody.appendChild(tr);
-            });
-
-            modalTotals.innerHTML = `TOTAL ITEMS: ${totalCount} &nbsp;|&nbsp; TOTAL SAVINGS: ${formatMoney(totalSav)}`;
-            debtWarning.classList.toggle('hidden', !hasDebt);
-            btnApply.disabled = totalCount === 0 || hasError;
-
-            // Listeners Modal
-            document.querySelectorAll('.modal-cb').forEach(cb => {
-                cb.addEventListener('change', (e) => {
-                    modalState[e.target.dataset.id].included = e.target.checked;
-                    renderModal();
-                });
-            });
-
-            document.querySelectorAll('.input-qty').forEach(input => {
-                input.addEventListener('input', (e) => {
-                    const id = e.target.dataset.id;
-                    const item = ALL_ITEMS.find(i => i.id === id);
-                    const val = e.target.value;
-                    
-                    const validation = validateQty(item, val);
-                    modalState[id].qty = val;
-                    modalState[id].error = validation.error;
-                    modalState[id].warning = validation.warning;
-                    modalState[id].savings = validation.savings;
-                    
-                    renderModal();
-                });
-            });
-        }
-
-        // APLICAR CAMBIOS (MOVING ITEMS TO FULFILL)
-        btnApply.addEventListener('click', () => {
-            const reasonSelect = document.getElementById('reasonSelect');
-            const reasonVal = reasonSelect.value;
-            const commentVal = document.getElementById('commentInput').value.trim();
-            
-            if (!reasonVal) { alert("Please select a reason for uncut."); return; }
-
-            const originalHTML = btnApply.innerHTML;
-            btnApply.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Updating...';
-            btnApply.disabled = true;
-            lucide.createIcons();
-
-            setTimeout(() => {
-                let finalCount = 0;
-                
-                Object.keys(modalState).forEach(id => {
-                    const s = modalState[id];
-                    if(s.included && !s.error) {
-                        // 1. Encontrar el Item en Cuts
-                        const movedItemIndex = ALL_ITEMS.findIndex(i => i.id === id);
-                        if(movedItemIndex > -1) {
-                            const movedItem = ALL_ITEMS[movedItemIndex];
-                            
-                            // 2. Removerlo de Cuts
-                            ALL_ITEMS.splice(movedItemIndex, 1);
-                            
-                            // 3. Agregarlo a Fulfill tab data
-                            FULFILL_ITEMS.unshift({
-                                id: movedItem.id,
-                                title: movedItem.title,
-                                type: movedItem.type,
-                                asin: movedItem.asin,
-                                reqProd: movedItem.recommendedQty,
-                                memphis: Number(s.qty), // default sim allocation based on input
-                                gp: 0,
-                                hamburg: 0,
-                                shortfall: 0,
-                                lastUpdated: "just now",
-                                icons: true,
-                                hasExcess: Number(s.qty) > movedItem.componentAvailable,
-                                excessQty: Number(s.qty) > movedItem.componentAvailable ? (Number(s.qty) - movedItem.componentAvailable) : 0,
-                                auditTrail: {
-                                    reason: reasonVal,
-                                    comment: commentVal || "No comment provided",
-                                    author: "Zack Shepherd", // Default simulated user
-                                    date: "April 13 2026, 10:49 am" // Default simulated date
-                                }
-                            });
-                            finalCount++;
-                        }
-                    }
-                });
-
-                closeModal();
-                selectedIds.clear();
-                
-                // Limpiar inputs del modal
-                reasonSelect.value = '';
-                document.getElementById('commentInput').value = '';
-
-                // Volver a renderizar
-                if (activeTab === 'cuts') renderDashboard();
-                else renderFulfillDashboard();
-                
-                // Mostrar Floating Toast
-                successMsg.innerHTML = `Success! Successfully uncut ${finalCount} items. moved into fulfill tab.`;
-                successAlert.classList.remove('hidden');
-                lucide.createIcons();
-                
-                setTimeout(() => { successAlert.classList.add('hidden'); }, 6000);
-
-                btnApply.innerHTML = originalHTML;
-                btnApply.disabled = false;
-                lucide.createIcons();
-            }, 800);
-        });
-
-        // Eventos Sorting
-        document.querySelectorAll('th[data-sort]').forEach(th => {
-            th.addEventListener('click', (e) => {
-                const col = th.getAttribute('data-sort');
-                const isCutsTable = th.closest('table').id === 'mainTable';
-                const state = isCutsTable ? sortState.cuts : sortState.fulfill;
-                
-                if (state.col === col) {
-                    state.asc = !state.asc; // Toggle dir
-                } else {
-                    state.col = col;
-                    state.asc = true; // Default asc
-                }
-                
-                if (isCutsTable) {
-                    pageState.cuts.current = 1;
-                    renderDashboard();
-                } else {
-                    pageState.fulfill.current = 1;
-                    renderFulfillDashboard();
-                }
-            });
-        });
-
-        // Init
-        setActiveTab('cuts');
-        
-        // Paginación Cuts
-        document.getElementById('btnPrevCuts').addEventListener('click', () => {
-            if (pageState.cuts.current > 1) {
-                pageState.cuts.current--;
-                renderDashboard();
-            }
-        });
-        document.getElementById('btnNextCuts').addEventListener('click', () => {
-            pageState.cuts.current++;
-            renderDashboard();
-        });
-        document.getElementById('pageSizeCuts').addEventListener('change', (e) => {
-            pageState.cuts.size = parseInt(e.target.value);
-            pageState.cuts.current = 1;
-            renderDashboard();
-        });
-
-        // Paginación Fulfill
-        document.getElementById('btnPrevFulfill').addEventListener('click', () => {
-            if (pageState.fulfill.current > 1) {
-                pageState.fulfill.current--;
-                renderFulfillDashboard();
-            }
-        });
-        document.getElementById('btnNextFulfill').addEventListener('click', () => {
-            pageState.fulfill.current++;
-            renderFulfillDashboard();
-        });
-        document.getElementById('pageSizeFulfill').addEventListener('change', (e) => {
-            pageState.fulfill.size = parseInt(e.target.value);
-            pageState.fulfill.current = 1;
-            renderFulfillDashboard();
-        });
+    <!-- Modular JS Architecture -->
+    <script src="js/constants.js"></script>
+    <script src="js/tags.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/columns.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/events.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
     </script>
+
+    <!-- TAG MODAL OVERLAY -->
+    <div class="modal-overlay" id="tagModalOverlay" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <h2 style="font-size: 20px; font-weight: 600; color: #111827;">Add Tag</h2>
+                    <span class="badge-selected" id="tagModalSelectedCount">0 items selected</span>
+                </div>
+                <button class="close-modal" id="closeTagModalBtn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="search-input-wrapper">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="tagModalSearch" placeholder="Search Tags...">
+                </div>
+                
+                <div class="warning-banner" id="tagModalWarning">
+                    <i data-lucide="zap" class="warning-icon"></i>
+                    <div class="warning-text">
+                        <strong>Shared tag names across channels:</strong> <span id="sharedTagNames">Fresh, Exclusive</span> selecting one does not select the other. Each channel tag is independent.
+                    </div>
+                </div>
+
+                <div class="tags-container" id="tagModalContent">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span class="tags-apply-count" id="tagModalApplyCount">0 tags to apply</span>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-secondary" id="cancelTagModalBtn">Cancel</button>
+                    <button class="btn btn-primary" id="applyTagModalBtn">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAG FILTER DROPDOWN (added to filters-left) -->
 </body>
+
 </html>
